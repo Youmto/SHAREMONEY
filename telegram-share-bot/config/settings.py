@@ -10,9 +10,10 @@ load_dotenv()
 BOT_USER_TOKEN = os.getenv("BOT_USER_TOKEN", "8528296334:AAHcG-X_mmYg3EyutP1DBLmf74S0CFKIC9A")
 BOT_ADMIN_TOKEN = os.getenv("BOT_ADMIN_TOKEN", "8307008390:AAEmfdlxTj6ciHytV8WvUgrKyeHiqZi8b3w")
 
-# === BASE DE DONNÉES ===
+# Render utilise "postgres://" mais asyncpg nécessite "postgresql://"
 DATABASE_URL = os.getenv("DATABASE_URL", "psql 'postgresql://neondb_owner:npg_w4ckLUKW5yPQ@ep-blue-frog-a2uzo6ke-pooler.eu-central-1.aws.neon.tech/bot%20ads?sslmode=require&channel_binding=require'")
-
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 # === CONFIGURATION ÉCONOMIQUE ===
 REWARD_PER_SHARE = 100  # FCFA par partage validé
 REFERRAL_BONUS = 50  # FCFA par filleul inscrit
