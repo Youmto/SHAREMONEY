@@ -331,8 +331,13 @@ async def create_share(
 
 
 async def get_share_by_id(share_id: int) -> Optional[dict]:
-    """Récupère un partage par son ID"""
-    share = await db.fetchrow("SELECT * FROM shares WHERE id = $1", share_id)
+    """Récupère un partage par son ID avec les infos utilisateur"""
+    share = await db.fetchrow("""
+        SELECT s.*, u.telegram_id as user_telegram_id, u.username, u.first_name
+        FROM shares s
+        JOIN users u ON s.user_id = u.id
+        WHERE s.id = $1
+    """, share_id)
     return dict(share) if share else None
 
 
@@ -355,7 +360,7 @@ async def approve_share(share_id: int, admin_telegram_id: int):
     """Approuve un partage et crédite l'utilisateur"""
     share = await get_share_by_id(share_id)
     if not share or share['status'] != ShareStatus.PENDING:
-        return False
+        return None
     
     # Mettre à jour le statut
     await db.execute("""
@@ -367,7 +372,34 @@ async def approve_share(share_id: int, admin_telegram_id: int):
     # Créditer l'utilisateur
     await update_user_balance(share['user_id'], REWARD_PER_SHARE)
     
-    return True
+    # Récupérer le nouvel utilisateur avec son solde mis à jour
+    user = await db.fetchrow("SELECT * FROM users WHERE id = $1", share['user_id'])
+    
+    # Vérifier bonus parrainage (seulement si premier partage validé)
+    referral_bonus_given = False
+    referrer_id = None
+    
+    if user and user.get('referred_by'):
+        # Compter les partages approuvés de cet utilisateur
+        approved_count = await db.fetchval("""
+            SELECT COUNT(*) FROM shares 
+            WHERE user_id = $1 AND status = 'approved'
+        """, share['user_id'])
+        
+        # Si c'est le premier partage approuvé, donner le bonus au parrain
+        if approved_count == 1:
+            referrer = await db.fetchrow("SELECT * FROM users WHERE id = $1", user['referred_by'])
+            if referrer:
+                await update_user_balance(referrer['id'], REFERRAL_BONUS)
+                referral_bonus_given = True
+                referrer_id = referrer['id']
+    
+    return {
+        'user_id': share['user_id'],
+        'new_balance': user['balance'] if user else 0,
+        'referral_bonus_given': referral_bonus_given,
+        'referrer_id': referrer_id
+    }
 
 
 async def reject_share(share_id: int, admin_telegram_id: int, reason: str = None):
