@@ -2,18 +2,52 @@
 Configuration principale du Bot de Partage
 """
 import os
+import sys
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # === TOKENS TELEGRAM ===
-BOT_USER_TOKEN = os.getenv("BOT_USER_TOKEN", "8528296334:AAHcG-X_mmYg3EyutP1DBLmf74S0CFKIC9A")
-BOT_ADMIN_TOKEN = os.getenv("BOT_ADMIN_TOKEN", "8307008390:AAEmfdlxTj6ciHytV8WvUgrKyeHiqZi8b3w")
+BOT_USER_TOKEN = os.getenv("BOT_USER_TOKEN", "")
+BOT_ADMIN_TOKEN = os.getenv("BOT_ADMIN_TOKEN", "")
 
+# === BASE DE DONNÉES ===
 # Render utilise "postgres://" mais asyncpg nécessite "postgresql://"
-DATABASE_URL = os.getenv("DATABASE_URL", "psql 'postgresql://neondb_owner:npg_w4ckLUKW5yPQ@ep-blue-frog-a2uzo6ke-pooler.eu-central-1.aws.neon.tech/bot%20ads?sslmode=require&channel_binding=require'")
-if DATABASE_URL.startswith("postgres://"):
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+
+# Validation des variables obligatoires
+def validate_config():
+    """Vérifie que toutes les variables obligatoires sont configurées"""
+    errors = []
+    
+    if not BOT_USER_TOKEN or BOT_USER_TOKEN == "YOUR_USER_BOT_TOKEN":
+        errors.append("❌ BOT_USER_TOKEN non configuré")
+    
+    if not BOT_ADMIN_TOKEN or BOT_ADMIN_TOKEN == "YOUR_ADMIN_BOT_TOKEN":
+        errors.append("❌ BOT_ADMIN_TOKEN non configuré")
+    
+    if not DATABASE_URL:
+        errors.append("❌ DATABASE_URL non configuré")
+    
+    if errors:
+        print("\n" + "="*50)
+        print("⚠️  ERREUR DE CONFIGURATION")
+        print("="*50)
+        for error in errors:
+            print(error)
+        print("\n📝 Sur Render, configurez ces variables dans:")
+        print("   Dashboard → Votre Service → Environment")
+        print("\n💡 Pour DATABASE_URL sur Render:")
+        print("   1. Créez une base PostgreSQL (New → PostgreSQL)")
+        print("   2. Copiez l'Internal Database URL")
+        print("   3. Ajoutez-la dans les variables d'environnement")
+        print("="*50 + "\n")
+        sys.exit(1)
+
+# Convertir postgres:// en postgresql:// si nécessaire
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 # === CONFIGURATION ÉCONOMIQUE ===
 REWARD_PER_SHARE = 100  # FCFA par partage validé
 REFERRAL_BONUS = 50  # FCFA par filleul inscrit
@@ -21,8 +55,8 @@ MIN_WITHDRAWAL = 500  # FCFA minimum pour retirer
 WITHDRAWAL_DELAY_HOURS = 24  # Délai de traitement
 
 # === LIMITES DE PARTAGE ===
-MAX_TELEGRAM_SHARES_PER_DAY = 10
-MAX_WHATSAPP_SHARES_PER_DAY = 10
+MAX_TELEGRAM_SHARES_PER_DAY = 5
+MAX_WHATSAPP_SHARES_PER_DAY = 5
 MIN_TELEGRAM_MEMBERS = 250
 MIN_WHATSAPP_MEMBERS = 200
 VIDEO_VALIDITY_HOURS = 48

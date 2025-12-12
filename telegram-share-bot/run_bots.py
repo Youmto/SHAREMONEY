@@ -6,7 +6,11 @@ import logging
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
 
-from config.settings import BOT_USER_TOKEN, BOT_ADMIN_TOKEN
+from config.settings import BOT_USER_TOKEN, BOT_ADMIN_TOKEN, validate_config
+
+# Valider la configuration au démarrage
+validate_config()
+
 from database.connection import init_database, insert_default_testimonials, db
 
 # Imports bot utilisateur
