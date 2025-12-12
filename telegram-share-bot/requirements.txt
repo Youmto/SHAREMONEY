@@ -1,0 +1,17 @@
+# Telegram Bot
+python-telegram-bot==21.0.1
+
+# Base de données PostgreSQL
+asyncpg==0.29.0
+
+# Traitement d'images
+Pillow==10.2.0
+
+# Variables d'environnement
+python-dotenv==1.0.0
+
+# Utilitaires
+aiohttp==3.9.1
+
+# Stockage cloud (vidéos)
+cloudinary==1.36.0

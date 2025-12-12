@@ -1,0 +1,11 @@
+# Démarrer les deux bots
+# Note: Sur Render, créer 2 services séparés
+
+# Service 1: Bot Utilisateur
+# web: python -m bot_user.main
+
+# Service 2: Bot Admin  
+# web: python -m bot_admin.main
+
+# OU utiliser un script de démarrage combiné:
+web: python run_bots.py
