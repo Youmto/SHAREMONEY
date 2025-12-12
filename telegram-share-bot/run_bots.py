@@ -3,6 +3,7 @@ Script pour lancer les deux bots simultanément - Version Expert
 """
 import asyncio
 import logging
+import os
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
 
@@ -207,6 +208,54 @@ async def keepalive_db():
                 pass
 
 
+# ============ HEALTH CHECK SERVER ============
+
+from aiohttp import web
+
+async def health_check(request):
+    """Endpoint de santé pour UptimeRobot et Render"""
+    try:
+        # Vérifier la connexion DB
+        await db.fetchval("SELECT 1")
+        db_status = "✅ Connected"
+    except:
+        db_status = "❌ Disconnected"
+    
+    return web.json_response({
+        "status": "running",
+        "database": db_status,
+        "bots": {
+            "user": "active",
+            "admin": "active"
+        }
+    })
+
+async def home(request):
+    """Page d'accueil simple"""
+    return web.Response(
+        text="🤖 Telegram Share Bot is running!\n\nEndpoints:\n- /health - Status check",
+        content_type="text/plain"
+    )
+
+async def start_health_server():
+    """Démarre le serveur HTTP pour le health check"""
+    app = web.Application()
+    app.router.add_get("/", home)
+    app.router.add_get("/health", health_check)
+    
+    # Port depuis variable d'environnement (Render définit PORT automatiquement)
+    port = int(os.environ.get("PORT", 10000))
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    
+    logger.info(f"🌐 Health server running on port {port}")
+    logger.info(f"📍 Endpoints: / and /health")
+    return runner
+
+
 # ============ MAIN ============
 
 async def main():
@@ -214,6 +263,9 @@ async def main():
     # Initialiser la base de données
     await init_database()
     await insert_default_testimonials()
+    
+    # Démarrer le serveur HTTP (pour Render + UptimeRobot)
+    health_runner = await start_health_server()
     
     # Lancer les deux bots
     user_app = await run_user_bot()
@@ -224,6 +276,7 @@ async def main():
     
     logger.info("✅ Les deux bots sont en cours d'exécution")
     logger.info("📌 Gestion vidéos via bot ADMIN: Menu → 📹 Vidéos")
+    logger.info("🔗 Configurez UptimeRobot sur: https://votre-app.onrender.com/health")
     
     # Garder le script en vie
     try:
@@ -231,6 +284,8 @@ async def main():
             await asyncio.sleep(3600)
     except (KeyboardInterrupt, SystemExit):
         logger.info("🛑 Arrêt des bots...")
+        
+        await health_runner.cleanup()
         
         await user_app.updater.stop()
         await user_app.stop()

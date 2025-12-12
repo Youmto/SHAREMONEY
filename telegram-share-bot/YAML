@@ -5,13 +5,16 @@
 # Documentation: https://render.com/docs/blueprint-spec
 
 services:
-  # Service principal - Bot Telegram
-  - type: worker
+  # Service principal - Bot Telegram (Web Service pour health check)
+  - type: web
     name: telegram-share-bot
     env: docker
     dockerfilePath: ./Dockerfile
     region: frankfurt  # ou oregon, singapore, ohio
-    plan: starter  # starter ($7/mois) ou standard ($25/mois)
+    plan: free  # free ou starter ($7/mois)
+    
+    # Health check
+    healthCheckPath: /health
     
     # Variables d'environnement
     envVars:
@@ -21,11 +24,9 @@ services:
       - key: BOT_ADMIN_TOKEN
         sync: false
       
-      # Base de données PostgreSQL (fournie par Render)
+      # Base de données PostgreSQL (lier manuellement ou utiliser fromDatabase)
       - key: DATABASE_URL
-        fromDatabase:
-          name: telegram-bot-db
-          property: connectionString
+        sync: false
       
       # Cloudinary (optionnel - pour les vidéos)
       - key: CLOUDINARY_CLOUD_NAME
@@ -36,16 +37,16 @@ services:
         sync: false
       
       # Admin Telegram ID
-      - key: ADMIN_TELEGRAM_ID
+      - key: ADMIN_IDS
         sync: false
       
       # Environnement
       - key: ENVIRONMENT
         value: production
 
-  # Base de données PostgreSQL
+# Base de données PostgreSQL (optionnel - peut être créé manuellement)
 databases:
   - name: telegram-bot-db
     databaseName: telegram_share_bot
-    plan: starter  # starter (gratuit 90 jours) ou basic ($7/mois)
+    plan: free  # free ou starter
     region: frankfurt
